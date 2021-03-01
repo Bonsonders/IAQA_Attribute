@@ -21,10 +21,12 @@ if __name__ == "__main__":
     optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4)
     val_metric = val_metrics()
     criterion = torch.nn.L1Loss()
-    writer = SummaryWriter(args.runs)
-    if not os.path.exists(args.checkpoints_dir):
-        os.makedirs(args.checkpoints_dir)
-    checkpoints = os.path.join(args.checkpoints_dir, '{net}-{epoch}-{type}.pth')
+    tensorboard_dir = os.path.join(args.runs,args.name)
+    writer = SummaryWriter(tensorboard_dir)
+    checkpoint_path = os.path.join(args.checkpoints_dir,args.name)
+    if not os.path.exists(checkpoint_path):
+        os.makedirs(checkpoint_path)
+    checkpoints = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
     
     
     train_loader = get_train_dataloader(args)
@@ -33,7 +35,7 @@ if __name__ == "__main__":
     trainer = create_supervised_trainer(model,optimizer,criterion,device = device)
     best_criterion = 0
     evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
-    
+    #writer.add_graph(model)
     
     
     
@@ -67,6 +69,7 @@ if __name__ == "__main__":
         if SROCC > best_criterion:
             torch.save(model.state_dict(), checkpoints.format(net=args.name, epoch=trainer.state.epoch, type='best'))
             best_criterion = SROCC
+            writer.add_text('Best_Criertion',"Epoch:{} {:.5f}".format(trainer.state.epoch,best_criterion))
 
         if args.distortion_divided:
             labels = list()
@@ -94,13 +97,5 @@ if __name__ == "__main__":
 
     trainer.run(train_loader,max_epochs = args.epochs)
 
-
-
-'''TODO:
-[1] Change Metris
-[2] TensorboardX
-[3] Directory for Checkpoint
-[4] ...
-'''
 
 

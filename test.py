@@ -17,7 +17,6 @@ if __name__ == '__main__':
     model = model.to(device)
     val_metric = val_metrics()
     val_loader = get_test_dataloader(args) 
-    
 
     evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
     evaluator.run(val_loader)
