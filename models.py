@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class IAQA_model(nn.Module):
     def __init__ (self,args):
         super(IAQA_model,self).__init__()
-        RESNET = model_template.resnet50(pretrained=True)
+        RESNET = model_template.resnet50(pretrained=False)
         self.features  = nn.Sequential(
             RESNET.conv1,
             RESNET.bn1,
@@ -16,12 +16,16 @@ class IAQA_model(nn.Module):
             RESNET.layer2,
             RESNET.layer3,
             RESNET.layer4)
+
         self.classifer = nn.Sequential(
             nn.Linear(2048, args.layer_num),
             nn.LeakyReLU(True),
             nn.BatchNorm1d(args.layer_num),
-            nn.Linear(args.layer_num, 1)
-        )
+            nn.Linear(args.layer_num, args.layer_num),
+            nn.LeakyReLU(True),
+            nn.BatchNorm1d(args.layer_num),
+            nn.Linear(args.layer_num,1)
+            )
 
     def forward(self,x):
         x= self.features(x)
