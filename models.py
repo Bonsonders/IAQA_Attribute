@@ -17,14 +17,16 @@ class IAQA_model(nn.Module):
             RESNET.layer3,
             RESNET.layer4)
         self.classifer = nn.Sequential(
-            nn.Linear(1024, args.layer_num),
+            nn.Linear(2048, args.layer_num),
             nn.LeakyReLU(True),
             nn.BatchNorm1d(args.layer_num),
             nn.Linear(args.layer_num, 1)
+        )
 
     def forward(self,x):
-        x = self.features(x)
-        x = F.max_pool2d(x,(x.size(-2),x.size(-1)))
-        x = self.classifer(x)
+        x= self.features(x)
+        x= F.max_pool2d(x,(x.size(-2),x.size(-1)))
+        x= x.view(x.size(0),-1)
+        x= self.classifer(x)
         return x
 
