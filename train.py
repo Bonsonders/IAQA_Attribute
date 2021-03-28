@@ -18,7 +18,8 @@ if __name__ == "__main__":
     model = IAQA_model
     device = torch.device("cuda" if args.gpu and torch.cuda.is_available() else "cpu")
     model = model.to(device)
-    optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4) #Change to AdaBound
+    optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4)
+    #optimizer = adabound.AdaBound(model.parameters(), lr=1e-3, final_lr=0.1) #Adabound: Adaboost+ SGD
     val_metric = val_metrics()
     criterion = torch.nn.L1Loss()
     tensorboard_dir = os.path.join(args.runs,args.name)
@@ -93,6 +94,3 @@ if __name__ == "__main__":
 
 
     trainer.run(train_loader, max_epochs= args.epochs)
-
-
-

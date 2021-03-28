@@ -9,24 +9,25 @@ class TrainOptions():
 
     def __init__(self):
         super(TrainOptions,self).__init__()
-    
+
     def initialize(self,parser):
-        parser.add_argument('--lr',type=float,default=0.1,help='initial learning rate')
-        parser.add_argument('--epochs',type=int,default=200,help='number of ephoes to train (default:200)')
-        parser.add_argument('--gpu',type=bool,default=True,help='flag whether to use GPU acceleration')
-        parser.add_argument('--batch_size',type=int,default=32,help='input batchsize for training(default:32)')
-        parser.add_argument('--log_interval',type=int,default=10,help='number of interval to report the status')
-        parser.add_argument('--label_dir',type=str,default='',help='directory for label.txt/label.csv')
-        parser.add_argument('--data_dir',type=str,default='',help='directory for Dataset')
-        parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models save directory')
-        parser.add_argument('--runs',type=str,default='./runs',help='tenserboardX directory')
-        parser.add_argument('--name',type=str,default='expriment',help='expriment name')
+        parser.add_argument('--lr',type= float,default=0.1,help='initial learning rate')
+        parser.add_argument('--epochs',type= int,default=200,help='number of ephoes to train (default:200)')
+        parser.add_argument('--gpu',type= bool,default=True,help='flag whether to use GPU acceleration')
+        parser.add_argument('--batch_size',type= int,default=32,help='input batchsize for training(default:32)')
+        parser.add_argument('--log_interval',type= int,default=10,help='number of interval to report the status')
+        parser.add_argument('--label_dir',type= str,default='',help='directory for label.txt/label.csv')
+        parser.add_argument('--data_dir',type= str,default='',help='directory for Dataset')
+        parser.add_argument('--checkpoints_dir', type= str, default='./checkpoints', help='models save directory')
+        parser.add_argument('--runs',type= str,default='./runs',help='tenserboardX directory')
+        parser.add_argument('--name',type= str,default='expriment',help='expriment name')
         parser.add_argument('--distortion_divided',action='store_true',default=False,help='Test the dataset for seperate type of distortion')
+        parser.add_argument('--layer_num',type=int,default=512)
         return parser
-    
+
     def parse(self):
         parser = ArgumentParser(formatter_class = ArgumentDefaultsHelpFormatter)
-        parser = self.initialize(parser) 
+        parser = self.initialize(parser)
         self.parser = parser
         self.opt = parser.parse_args()
         return parser.parse_args()
@@ -69,5 +70,5 @@ class TestOptions():
 
     def parse(self):
         parser = ArgumentParser(formatter_class = ArgumentDefaultsHelpFormatter)
-        parser = self.initialize(parser) 
+        parser = self.initialize(parser)
         return parser.parse_args()
