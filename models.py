@@ -29,7 +29,7 @@ class IAQA_model(nn.Module):
 
     def forward(self,x):
         x= self.features(x)
-        x= F.adaptive_avg_pool2d(x,(x.size(-2),x.size(-1)))
+        x= F.avg_pool2d(x,(x.size(-2),x.size(-1)))
         x= x.view(x.size(0),-1)
         x= self.classifer(x)
         return x
