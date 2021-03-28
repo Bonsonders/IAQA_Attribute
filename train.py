@@ -39,7 +39,8 @@ if __name__ == "__main__":
     best_criterion = -1
     evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
     #writer.add_graph(model)
-
+    global lr
+    lr = args.lr
 
 
     @trainer.on(Events.ITERATION_COMPLETED(every = args.log_interval))
@@ -49,16 +50,17 @@ if __name__ == "__main__":
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def training_results(trainer):
-        print("====================Epoch:{}====================".format(trainer.state.epoch))
+        global lr
+        print("====================Epoch:{}==================== Learning Rate:{:.5f}".format(trainer.state.epoch,lr))
         evaluator.run(train_loader)
         metrics = evaluator.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Training Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
              .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
-
         if trainer.state.epoch % 20 == 0:
             for p in optimizer.param_groups:
                 p['lr'] *= 0.9
+                lr = p['lr']
 
 
     @trainer.on(Events.EPOCH_COMPLETED)

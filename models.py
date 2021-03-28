@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class IAQA_model(nn.Module):
     def __init__ (self,args):
         super(IAQA_model,self).__init__()
-        RESNET = model_template.resnet50(pretrained=False)
+        RESNET = model_template.resnet50(pretrained=True)
         self.features  = nn.Sequential(
             RESNET.conv1,
             RESNET.bn1,
@@ -29,7 +29,7 @@ class IAQA_model(nn.Module):
 
     def forward(self,x):
         x= self.features(x)
-        x= F.max_pool2d(x,(x.size(-2),x.size(-1)))
+        x= F.adaptive_avg_pool2d(x,(x.size(-2),x.size(-1)))
         x= x.view(x.size(0),-1)
         x= self.classifer(x)
         return x
