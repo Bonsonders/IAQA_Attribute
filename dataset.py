@@ -25,7 +25,8 @@ class DataSet(Dataset):
                 self.label.append(float(i.split(' ')[1]))
                 if args.distortion_divided:
                     self.dis_type = [i.split('/')[0] for i in self.im_names]
-        self.len = len(self.label)
+        self.label_std= (self.label-np.min(self.label))/(np.max(self.label)-np.min(self.label))
+        self.len = len(self.label_std)
 
     def __len__(self):
         return self.len
