@@ -3,9 +3,11 @@ import torch
 import numpy as np
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
-from PIL import Image
+from PIL import Image,ImageFile
 from torch.utils.data import DataLoader
 import warnings
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class DataSet(Dataset):
     def __init__(self,args):
@@ -15,23 +17,24 @@ class DataSet(Dataset):
         self.im_names = list()
         self.label = list()
         self.trans = transforms.Compose([
-        transforms.RandomCrop(224)])
+        transforms.Resize((224,224))])
         self.dis_type = None
         self.crop_num = args.crop_num
         with open(self.label_file,'r') as f:
             im_label = f.readlines()
             for i in im_label:
+                warnings.resetwarnings()
                 im_name = i.split(' ')[0]
                 im_label = i.split(' ')[1]
                 if os.path.isfile(os.path.join(self.dir,im_name)):
+                    warnings.filterwarnings('error')
                     try:
-                        warnings.filterwarnings('error',category= UserWarning)
                         im_tmp = Image.open(os.path.join(self.dir,im_name))
                         w,h = im_tmp.size
                         im_tmp.close()
-                        warnings.resetwarnings()
                     except:
                         continue
+                    warnings.resetwarnings()
                     if w>224 and h>224:
                         for i in range(args.crop_num):
                             self.im_names.append(im_name)
@@ -47,10 +50,10 @@ class DataSet(Dataset):
     def __getitem__(self,idx):
         im_path = os.path.join(self.dir,self.im_names[idx])
         im = Image.open(im_path)
+        im = self.trans(im)
         im = transforms.functional.to_tensor(im)
         if im.size(0)== 1:
            im = im.repeat(3,1,1)
-        im = self.trans(im)
         if self.dis_type == None:
             return im,torch.tensor([self.label_std[idx]])
         else:
@@ -59,7 +62,10 @@ class DataSet(Dataset):
 
 def get_train_dataloader(args):
     dataset_training = DataSet(args)
-    lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)+1]
+    if "AVA" in args.name:
+        lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)+1]
+    else:
+        lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)]
     data_train,data_val = torch.utils.data.random_split(dataset_training,lengths)
     train_loader = DataLoader(data_train,
                               batch_size = args.batch_size,
