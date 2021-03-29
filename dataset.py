@@ -5,7 +5,8 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from PIL import Image
 from torch.utils.data import DataLoader
-
+import warnings
+warnings.filterwarnings('error')
 
 class DataSet(Dataset):
     def __init__(self,args):
@@ -24,9 +25,16 @@ class DataSet(Dataset):
                 im_name = i.split(' ')[0]
                 im_label = i.split(' ')[1]
                 if os.path.isfile(os.path.join(self.dir,im_name)):
-                    for i in range(args.crop_num):
-                        self.im_names.append(im_name)
-                        self.label.append(float(im_label))
+                    try:
+                        im_tmp = Image.open(os.path.join(self.dir,im_name))
+                        w,h = im_tmp.size
+                        im_tmp.close()
+                    except:
+                        continue
+                    if w>224 and h>224:
+                        for i in range(args.crop_num):
+                            self.im_names.append(im_name)
+                            self.label.append(float(im_label))
                 if args.distortion_divided:
                     self.dis_type = [i.split('/')[0] for i in self.im_names]
         self.label_std= (self.label-np.min(self.label))/(np.max(self.label)-np.min(self.label))
@@ -49,10 +57,8 @@ class DataSet(Dataset):
 
 
 def get_train_dataloader(args):
-
-
     dataset_training = DataSet(args)
-    lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)]
+    lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)+1]
     data_train,data_val = torch.utils.data.random_split(dataset_training,lengths)
     train_loader = DataLoader(data_train,
                               batch_size = args.batch_size,
