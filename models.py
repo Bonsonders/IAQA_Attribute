@@ -6,15 +6,12 @@ import torch.nn.functional as F
 class IAQA_model(nn.Module):
     def __init__ (self,args):
         super(IAQA_model,self).__init__()
-        VGG = model_template.vgg16(pretrained=True)
+        VGG = model_template.vgg16(pretrained=False)
         self.features  = VGG.features
         self.classifer = nn.Sequential(
             nn.Linear(512, args.layer_num),
             nn.LeakyReLU(True),
-            nn.BatchNorm1d(args.layer_num),
-            nn.Linear(args.layer_num, args.layer_num),
-            nn.LeakyReLU(True),
-            nn.BatchNorm1d(args.layer_num),
+            nn.Dropout(0.5),
             nn.Linear(args.layer_num,1)
             )
 
