@@ -6,7 +6,6 @@ from torch.utils.data import Dataset
 from PIL import Image
 from torch.utils.data import DataLoader
 import warnings
-warnings.filterwarnings('error')
 
 class DataSet(Dataset):
     def __init__(self,args):
@@ -26,9 +25,11 @@ class DataSet(Dataset):
                 im_label = i.split(' ')[1]
                 if os.path.isfile(os.path.join(self.dir,im_name)):
                     try:
+                        warnings.filterwarnings('error',category= UserWarning)
                         im_tmp = Image.open(os.path.join(self.dir,im_name))
                         w,h = im_tmp.size
                         im_tmp.close()
+                        warnings.resetwarnings()
                     except:
                         continue
                     if w>224 and h>224:
