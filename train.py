@@ -33,7 +33,6 @@ if __name__ == "__main__":
 
     train_loader,val_loader = get_train_dataloader(args)
     test_loader = get_test_dataloader(args)
-
     trainer = create_supervised_trainer(model, optimizer, criterion, device= device)
     global best_criterion
     best_criterion = -1
@@ -105,7 +104,7 @@ if __name__ == "__main__":
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def Test_results(trainer):
-        evaluator.run(val_loader)
+        evaluator.run(test_loader)
         metrics = evaluator.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Testing Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
@@ -122,7 +121,7 @@ if __name__ == "__main__":
             labels = list()
             preds = list()
             dis_types = list()
-            for (im, label, dis_type) in val_loader:
+            for (im, label, dis_type) in test_loader:
                 labels.append({dis_type:label})
                 dis_types.append(dis_type)
                 if args.gpu:

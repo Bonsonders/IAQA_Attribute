@@ -1,6 +1,6 @@
+import os
 import torch
 import numpy as np
-import os
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from PIL import Image
@@ -18,11 +18,16 @@ class DataSet(Dataset):
         transforms.ToTensor(),
         transforms.RandomCrop(224)])
         self.dis_type = None
+        self.crop_num = args.crop_num
         with open(self.label_file,'r') as f:
             im_label = f.readlines()
             for i in im_label:
-                self.im_names.append(i.split(' ')[0])
-                self.label.append(float(i.split(' ')[1]))
+                im_name = i.split(' ')[0]
+                im_label = i.split(' ')[1]
+                if os.path.isfile(os.path.join(self.dir,im_name)):
+                    for i in range(args.crop_num):
+                        self.im_names.append(im_name)
+                        self.label.append(float(im_label))
                 if args.distortion_divided:
                     self.dis_type = [i.split('/')[0] for i in self.im_names]
         self.label_std= (self.label-np.min(self.label))/(np.max(self.label)-np.min(self.label))
@@ -40,7 +45,7 @@ class DataSet(Dataset):
         if self.dis_type == None:
             return im,torch.tensor([self.label[idx]])
         else:
-            return im,torch.tensor([self.label[idx]]),torch.tensor([self.dis_type[idx]])
+            return im,label_ls,torch.tensor([self.dis_type[idx]])
 
 
 def get_train_dataloader(args):
