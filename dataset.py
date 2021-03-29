@@ -15,7 +15,6 @@ class DataSet(Dataset):
         self.im_names = list()
         self.label = list()
         self.trans = transforms.Compose([
-        transforms.ToTensor(),
         transforms.RandomCrop(224)])
         self.dis_type = None
         self.crop_num = args.crop_num
@@ -39,11 +38,12 @@ class DataSet(Dataset):
     def __getitem__(self,idx):
         im_path = os.path.join(self.dir,self.im_names[idx])
         im = Image.open(im_path)
-        im = self.trans(im)
+        im = transforms.functional.to_tensor(im)
         if im.size(0)== 1:
            im = im.repeat(3,1,1)
+        im = self.trans(im)
         if self.dis_type == None:
-            return im,torch.tensor([self.label[idx]])
+            return im,torch.tensor([self.label_std[idx]])
         else:
             return im,label_ls,torch.tensor([self.dis_type[idx]])
 
