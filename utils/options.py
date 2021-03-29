@@ -23,7 +23,7 @@ class TrainOptions():
         parser.add_argument('--name',type= str,default='expriment',help='expriment name')
         parser.add_argument('--distortion_divided',action='store_true',default=False,help='Test the dataset for seperate type of distortion')
         parser.add_argument('--layer_num',type=int,default=512, help='number of inner layer')
-        parser.add_argument('--crop_num',type= int, default=4, help='set the number of crop')
+        parser.add_argument('--crop_num',type= int, default=1, help='set the number of crop')
         return parser
 
     def parse(self):

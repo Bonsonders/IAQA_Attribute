@@ -70,7 +70,7 @@ def get_test_dataloader(args):
     dataset_testing = DataSet(args)
     test_loader = DataLoader(dataset_testing,
                              batch_size = args.batch_size,
-                             shuffle = True,
+                             shuffle = False,
                              num_workers=4)
     return test_loader
 
