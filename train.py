@@ -56,10 +56,6 @@ if __name__ == "__main__":
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Training Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
              .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
-        if trainer.state.epoch % 20 == 0:
-            for p in optimizer.param_groups:
-                p['lr'] *= 0.9
-                lr = p['lr']
 
 
     @trainer.on(Events.EPOCH_COMPLETED)
