@@ -17,7 +17,7 @@ class DataSet(Dataset):
         self.im_names = list()
         self.label = list()
         self.trans = transforms.Compose([
-        transforms.RandomCrop((224,224))])
+        transforms.RandomCrop((256,256))])
         self.dis_type = None
         self.crop_num = args.crop_num
         with open(self.label_file,'r') as f:
@@ -41,8 +41,8 @@ class DataSet(Dataset):
                             self.label.append(float(im_label))
                 if args.distortion_divided:
                     self.dis_type = [i.split('/')[0] for i in self.im_names]
-        self.label_std= (self.label-np.min(self.label))/(np.max(self.label)-np.min(self.label))
-        self.len = len(self.label_std)
+        #self.label_std= (self.label-np.min(self.label))/(np.max(self.label)-np.min(self.label))
+        self.len = len(self.label)
 
     def __len__(self):
         return self.len
@@ -55,7 +55,7 @@ class DataSet(Dataset):
         if im.size(0)== 1:
            im = im.repeat(3,1,1)
         if self.dis_type == None:
-            return im,torch.tensor([self.label_std[idx]])
+            return im,torch.tensor([self.label[idx]])
         else:
             return im,label_ls,torch.tensor([self.dis_type[idx]])
 
