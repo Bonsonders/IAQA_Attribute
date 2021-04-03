@@ -6,19 +6,17 @@ import torch
 class val_metrics(Metric):
 
     def reset(self):
-        self.y_p = list()
-        self.y = list()
+        self.y = np.array([])
+        self.y_p = np.array([])
 
     def update(self,output):
         pred,y = output
-        self.y.append(y)
-        self.y_p.append(pred)
+        self.y = np.append(self.y,y.cpu().numpy())
+        self.y_p = np.append(self.y_p,pred.cpu().numpy())
 
     def compute(self):
         y = np.reshape(np.asarray(self.y),(-1,))
         pred = np.reshape(np.asarray(self.y_p),(-1,))
-        y = np.array([x.cpu() for x in y])
-        pred = np.array([x.cpu() for x in pred])
         #Calulate the Metric of our mission
         SROCC = stats.spearmanr(y,pred)[0]
         KROCC = stats.stats.kendalltau(y,pred)[0]
@@ -34,20 +32,18 @@ class test_metrics(Metric):
         self.num = args.crop_num
 
     def reset(self):
-        self.y_p = list()
-        self.y = list()
+        self.y = np.array([])
+        self.y_p = np.array([])
 
     def update(self,output):
         pred,y = output
-        self.y.append(y[::self.num])
-        predd = torch.mean(pred.view(-1,self.num),dim=1)
-        self.y_p.append(predd)
+        self.y = np.append(self.y,y.cpu().numpy()[::self.num])
+        predd = pred.cpu().numpy().reshape(-1,self.num)
+        self.y_p = np.append(np.mean(predd,axis = -1))
 
     def compute(self):
         y = np.reshape(np.asarray(self.y),(-1,))
         pred = np.reshape(np.asarray(self.y_p),(-1,))
-        y = np.array([x.cpu() for x in y])
-        pred = np.array([x.cpu() for x in pred])
         #Calulate the Metric of our mission
         SROCC = stats.spearmanr(y,pred)[0]
         KROCC = stats.stats.kendalltau(y,pred)[0]

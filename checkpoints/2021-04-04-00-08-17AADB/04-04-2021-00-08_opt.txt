@@ -1,0 +1,17 @@
+----------------- Opts ---------------
+               batch_size: 32                            
+          checkpoints_dir: ./checkpoints                 
+                 crop_num: 1                             
+                 data_dir: ../../DataBase/AADB/datasetImages_originalSize	[default: ]
+       distortion_divided: False                         
+                   epochs: 200                           
+                      gpu: True                          
+                label_dir: ./utils/AADB_label.txt        	[default: ]
+                layer_num: 512                           
+             log_interval: 10                            
+                       lr: 1e-05                         	[default: 0.1]
+                     name: 2021-04-04-00-08-17AADB       	[default: expriment]
+                     runs: ./runs                        
+             testdata_dir: ../../DataBase/AADB/AADB_newtest	[default: ]
+            testlabel_dir: ../../DataBase/AADB/AADB_newtest/labels.txt	[default: ]
+---------------------------------------
