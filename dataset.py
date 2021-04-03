@@ -50,7 +50,7 @@ class DataSet(Dataset):
     def __getitem__(self,idx):
         im_path = os.path.join(self.dir,self.im_names[idx])
         im = Image.open(im_path)
-        im = self.trans(im)
+        im = self.trans(im)?!?jedi=0, ?!?                 (*_*pic*_*) ?!?jedi?!?
         im = transforms.functional.to_tensor(im)
         if im.size(0)== 1:
            im = im.repeat(3,1,1)
