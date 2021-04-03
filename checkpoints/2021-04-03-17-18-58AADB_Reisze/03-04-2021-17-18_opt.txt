@@ -1,0 +1,15 @@
+----------------- Opts ---------------
+               batch_size: 32                            
+          checkpoints_dir: ./checkpoints                 
+                 crop_num: 1                             
+                 data_dir: ../../DataBase/AADB/images/   	[default: ]
+       distortion_divided: False                         
+                   epochs: 200                           
+                      gpu: True                          
+                label_dir: ./utils/AADB_label.txt        	[default: ]
+                layer_num: 512                           
+             log_interval: 10                            
+                       lr: 0.001                         	[default: 0.1]
+                     name: 2021-04-03-17-18-58AADB_Reisze	[default: expriment]
+                     runs: ./runs                        
+---------------------------------------

@@ -10,6 +10,8 @@ from utils.metrics import val_metrics
 from models import *
 from scipy import stats
 import adabound
+from utils.ranking_loss import RankingLoss
+from utils.regress_loss import RegressionLoss
 
 if __name__ == "__main__":
 
@@ -22,7 +24,7 @@ if __name__ == "__main__":
     #optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4)
     optimizer = adabound.AdaBound(model.parameters(), lr=args.lr, final_lr=0.1) #Adabound: Adaboost+ SGD
     val_metric = val_metrics()
-    criterion = torch.nn.L1Loss()
+    criterion = RegressionLoss()
     tensorboard_dir = os.path.join(args.runs,args.name)
     writer = SummaryWriter(tensorboard_dir)
     checkpoint_path = os.path.join(args.checkpoints_dir,args.name)
