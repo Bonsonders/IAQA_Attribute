@@ -62,7 +62,10 @@ class DataSet(Dataset):
 
 def get_train_dataloader(args):
     dataset_training = DataSet(args)
-    lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)+1]
+    if "AVA" in args.name:
+        lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)+1]
+    else:
+        lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)]
     data_train,data_val = torch.utils.data.random_split(dataset_training,lengths)
     train_loader = DataLoader(data_train,
                               batch_size = args.batch_size,
