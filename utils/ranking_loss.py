@@ -7,8 +7,8 @@ class RankingLoss(nn.Module):
         super(RankingLoss, self).__init__()
         self.margin = 0.0
         self.target = torch.ones(args.batch_size)
-        if args.cuda:
-            self.target = self.target.cuda(args.gpu)
+        if args.gpu:
+            self.target = self.target.cuda(0)
 
     def forward(self, image_p_batch, _):
         image_p_batch = image_p_batch.view(-1).sigmoid()

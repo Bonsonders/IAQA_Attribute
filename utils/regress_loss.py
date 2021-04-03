@@ -28,16 +28,3 @@ class RegressionLoss(nn.Module):
             else:
                 acc = (outputs - targets).abs().mean()
             return acc, pred, probs
-
-
-if __name__ == '__main__':
-    loss_module = RegressionLoss()
-    # my_outputs = torch.rand(10, 5)
-    my_outputs = torch.rand(10, 1)
-    my_targets = torch.rand(10,1)
-    my_loss = loss_module(my_outputs, my_targets)
-    print(f'my_loss: {my_loss}')
-    my_acc, my_pred, my_probs = loss_module.accuracy(my_outputs, my_targets)
-    print(f'acc: {my_acc.detach().cpu().numpy()}, \n'
-          f'pred: {my_pred.detach().cpu().numpy()}, \n'
-          f'my_probs: {my_probs.detach().cpu().numpy()}')
