@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from dataset import get_test_dataloader,get_train_dataloader
 from tensorboardX import SummaryWriter
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-from utils.metrics import val_metrics
+from utils.metrics import val_metrics,test_metrics
 from models import *
 from scipy import stats
 import adabound
@@ -23,6 +23,7 @@ if __name__ == "__main__":
     #optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4)
     optimizer = adabound.AdaBound(model.parameters(), lr=args.lr, final_lr=0.1) #Adabound: Adaboost+ SGD
     val_metric = val_metrics()
+    test_metric = test_metrics(args)
     criterion = RegressionLoss()
     tensorboard_dir = os.path.join(args.runs,args.name)
     writer = SummaryWriter(tensorboard_dir)
@@ -37,7 +38,8 @@ if __name__ == "__main__":
     trainer = create_supervised_trainer(model, optimizer, criterion, device= device)
     global best_criterion
     best_criterion = -1
-    evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
+    evaluator_val = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
+    evaluator_test = create_supervised_evaluator(model,metrics = {'test': test_metric},device = device)
     #writer.add_graph(model)
     global lr
     lr = args.lr
@@ -52,8 +54,8 @@ if __name__ == "__main__":
     def training_results(trainer):
         global lr
         print("====================Epoch:{}==================== Learning Rate:{:.5f}".format(trainer.state.epoch,lr))
-        evaluator.run(train_loader)
-        metrics = evaluator.state.metrics
+        evaluator_val.run(train_loader)
+        metrics = evaluator_val.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Training Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
              .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
@@ -61,8 +63,8 @@ if __name__ == "__main__":
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def Validation_results(trainer):
-        evaluator.run(val_loader)
-        metrics = evaluator.state.metrics
+        evaluator_val.run(val_loader)
+        metrics = evaluator_val.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Validation Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
             .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
@@ -101,8 +103,8 @@ if __name__ == "__main__":
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def Test_results(trainer):
-        evaluator.run(test_loader)
-        metrics = evaluator.state.metrics
+        evaluator_test.run(test_loader)
+        metrics = evaluator_test.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Testing Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
             .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
