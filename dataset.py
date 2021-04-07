@@ -30,7 +30,6 @@ class DataSet(Dataset):
             for i in im_label:
                 warnings.resetwarnings()
                 im_name = i.split(' ')[0]
-                print(i)
                 im_label = i.split(' ')[1]
                 if os.path.isfile(os.path.join(self.dir,im_name)):
                     warnings.filterwarnings('error')
