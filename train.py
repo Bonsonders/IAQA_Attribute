@@ -20,10 +20,12 @@ if __name__ == "__main__":
     model = IAQA_model(args)
     device = torch.device("cuda" if args.gpu and torch.cuda.is_available() else "cpu")
     model = model.to(device)
+    #optimizer = torch.optim.Adam(model.parameters(),lr = args.lr, weight_decay = 1e-3)
     #optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4)
     optimizer = adabound.AdaBound(model.parameters(), lr=args.lr, final_lr=0.1) #Adabound: Adaboost+ SGD
     val_metric = val_metrics()
-    test_metric = test_metrics(args)
+    test_metric = test_metrics()
+    test_metric.crop_num(args)
     criterion = RegressionLoss()
     tensorboard_dir = os.path.join(args.runs,args.name)
     writer = SummaryWriter(tensorboard_dir)
@@ -32,15 +34,14 @@ if __name__ == "__main__":
         os.makedirs(checkpoint_path)
     checkpoints = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
 
-
     train_loader,val_loader = get_train_dataloader(args)
     test_loader = get_test_dataloader(args)
     trainer = create_supervised_trainer(model, optimizer, criterion, device= device)
     global best_criterion
     best_criterion = -1
-    evaluator_val = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
-    evaluator_test = create_supervised_evaluator(model,metrics = {'test': test_metric},device = device)
-    #writer.add_graph(model)
+
+    evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
+   # writer.add_graph(model)
     global lr
     lr = args.lr
 
@@ -54,8 +55,8 @@ if __name__ == "__main__":
     def training_results(trainer):
         global lr
         print("====================Epoch:{}==================== Learning Rate:{:.5f}".format(trainer.state.epoch,lr))
-        evaluator_val.run(train_loader)
-        metrics = evaluator_val.state.metrics
+        evaluator.run(train_loader)
+        metrics = evaluator.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Training Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
              .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
@@ -63,8 +64,8 @@ if __name__ == "__main__":
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def Validation_results(trainer):
-        evaluator_val.run(val_loader)
-        metrics = evaluator_val.state.metrics
+        evaluator.run(val_loader)
+        metrics = evaluator.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
         print("Validation Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
             .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
@@ -103,9 +104,11 @@ if __name__ == "__main__":
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def Test_results(trainer):
-        evaluator_test.run(test_loader)
-        metrics = evaluator_test.state.metrics
-        SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
+        test_metric.attach(evaluator,"test")
+        evaluator.run(test_loader)
+        metrics = evaluator.state.metrics
+        SROCC, KROCC, PLCC, RMSE, Acc = metrics['test']
+        test_metric.detach(evaluator)
         print("Testing Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
             .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
         writer.add_scalar('Test/LOSS', RMSE, trainer.state.epoch)
@@ -113,7 +116,7 @@ if __name__ == "__main__":
         global best_criterion
         if abs(SROCC) > best_criterion:
             torch.save(model.state_dict(), checkpoints.format(net=args.name, epoch=trainer.state.epoch, type='test'))
-            best_criterion = SROCC
+            best_criterion = abs(SROCC)
             writer.add_text('Best_Criertion',"Epoch:{} {:.5f}".format(trainer.state.epoch,best_criterion))
 
         if args.distortion_divided:

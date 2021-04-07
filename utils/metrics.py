@@ -28,7 +28,7 @@ class val_metrics(Metric):
 
 
 class test_metrics(Metric):
-    def __init__(self,args):
+    def crop_num(self,args):
         self.num = args.crop_num
 
     def reset(self):
@@ -39,7 +39,7 @@ class test_metrics(Metric):
         pred,y = output
         self.y = np.append(self.y,y.cpu().numpy()[::self.num])
         predd = pred.cpu().numpy().reshape(-1,self.num)
-        self.y_p = np.append(np.mean(predd,axis = -1))
+        self.y_p = np.append(self.y_p,np.mean(predd,axis = -1))
 
     def compute(self):
         y = np.reshape(np.asarray(self.y),(-1,))
