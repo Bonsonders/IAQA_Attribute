@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class IAQA_model(nn.Module):
     def __init__ (self,args):
         super(IAQA_model,self).__init__()
-        MobileNet = model_template.mobilenet_v3_large(pretrained=False)
+        MobileNet = model_template.mobilenet_v3_large(pretrained=True)
         self.features  = MobileNet.features
         self.classifer = nn.Sequential(
             nn.Linear(960, args.layer_num),

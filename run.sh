@@ -17,4 +17,4 @@ SPAQ_test_label="./utils/SPAQ_Test.txt"
 LR=1e-4
 
 ######################################
-python3 train.py --data_dir $AADB --label_dir $LABEL_AADB --lr $LR --name $date"AADB_MobileNet_2_" --batch_size 32 --testdata_dir $AADB --testlabel_dir $AADB_test_label
+python3 train.py --data_dir $AADB --label_dir $LABEL_AADB --lr $LR --name $date"AADB_MobileNet_2_" --batch_size 32 --testdata_dir $AADB --testlabel_dir $AADB_test_label --crop_num 2

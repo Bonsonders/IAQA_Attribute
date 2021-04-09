@@ -58,6 +58,7 @@ if __name__ == "__main__":
         evaluator.run(train_loader)
         metrics = evaluator.state.metrics
         SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
+        writer.add_scalar('Train/SROCC', SROCC, trainer.state.epoch)
         print("Training Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
              .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
 
@@ -104,11 +105,11 @@ if __name__ == "__main__":
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def Test_results(trainer):
-       # test_metric.attach(evaluator,"test")
+        test_metric.attach(evaluator,"test")
         evaluator.run(test_loader)
         metrics = evaluator.state.metrics
-        SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
-       # test_metric.detach(evaluator)
+        SROCC, KROCC, PLCC, RMSE, Acc = metrics['test']
+        test_metric.detach(evaluator)
         print("Testing Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
             .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
         writer.add_scalar('Test/LOSS', RMSE, trainer.state.epoch)
