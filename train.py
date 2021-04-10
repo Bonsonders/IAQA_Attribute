@@ -42,8 +42,8 @@ def test(l_list,t_list):
             ims = ims.cuda()
             labels = labels.cuda()
         outs = model(ims)
-        l_list = np.append(l_list,labels.cpu().numpy())
-        t_list = np.append(t_list,outs.cpu().numpy())
+        l_list = np.append(l_list,labels.detach().cpu().numpy())
+        t_list = np.append(t_list,outs.detach().cpu().numpy())
 
     return l_list,t_list
 
@@ -67,9 +67,7 @@ if __name__ == "__main__":
         os.makedirs(checkpoint_path)
     checkpoints = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
 
-    global best_criterion
     best_criterion = -1
-    global lr
     lr = args.lr
     train_loader,val_loader = get_train_dataloader(args)
     test_loader = get_test_dataloader(args)
@@ -92,14 +90,17 @@ if __name__ == "__main__":
         y_l = np.array([])
         y_p = np.array([])
         start = time.time()
-        y_l, y_p = test(args,test_loader,y_l,y_p)
+        y_l, y_p = test(y_l,y_p)
         SROCC, KROCC, PLCC, RMSE, Acc = evaluate(y_l,y_p)
         end = time.time()
         writer.add_scalar('Test/LOSS', RMSE,epoch)
         writer.add_scalar('Test/SROCC', SROCC,epoch)
         print("Testing Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f} ***** Time Cost: {:.1f} s"
              .format(epoch, Acc, RMSE,SROCC,KROCC,PLCC,end-start))
-
+        if abs(SROCC) > best_criterion:
+            torch.save(model.state_dict(), checkpoints.format(net=args.name, epoch=epoch, type='test'))
+            best_criterion = abs(SROCC)
+            writer.add_text('Best_Criertion',"Epoch:{} {:.5f}".format(epoch,best_criterion))
 #------------------------------------------------------------------------#
 
             ####################################################
