@@ -69,6 +69,8 @@ class TestOptions():
         parser.add_argument('--weights',type=str,required=True,help='the weights file you want to test')
         parser.add_argument('--Dataset',type=str,required=True,help='the dataset you want to test')
         parser.add_argument('--distortion_divided',action='store_true',default=False,help='Test the dataset for seperate type of distortion')
+        parser.add_argument('--testlabel_dir',type= str,default='',help='directory for test dataset label.txt/label.csv')
+        parser.add_argument('--testdata_dir',type= str,default='',help='directory for test Dataset')
         return parser
 
     def parse(self):

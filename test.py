@@ -1,51 +1,43 @@
 import torch
+import time
 from torch.utils.data import DataLoader
 from utils.options import TestOptions
 import numpy as np
 from dataset import get_test_dataloader
 from models import *
-from ignite.engine import create_supervised_evaluator
-from utils.metrics import val_metrics
+from utils.metrics import evaluate
 from scipy import stats
+
+
+def test(l_list,t_list):
+    start_time = time.time()
+    test_loader = get_test_dataloader(args)
+    for batch_index,(ims,labels) in enumerate(test_load):
+        if args.gpu:
+            ims = ims.cuda()
+            labels = labels.cuda()
+        outs = model(ims)
+        loss = criterion(labels,outs)
+        l_list = np.append(l_list,labels.cpu().numpy())
+        t_list = np.append(t_list,outs.cpu().numpy())
+
+    end_time = time.time()
+    time_cost = end_time - start_time
+    return time_cost,l_list,t_list
 
 if __name__ == '__main__':
     args = TestOptions().parse()
-    model = None 
+    model = IAQA_model(args)
     weight = torch.load(args.weights)
     model.load_state_dict(weight).eval()
     device = torch.device("cuda" if args.gpu and torch.cuda.is_available() else "cpu")
     model = model.to(device)
-    val_metric = val_metrics()
-    val_loader = get_test_dataloader(args) 
 
-    evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
-    evaluator.run(val_loader)
-    metrics = evaluator.state.metrics
-    SROCC, KROCC, PLCC, RMSE, Acc = metrics['val']
-    print("Test Results - Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
-            .format(Acc,RMSE,SROCC,KROCC,PLCC))
-    
-    
-    if args.distortion_divided:
-        labels = list()
-        preds = list()
-        dis_types = list()
-        for (im,label,dis_type) in val_loader:
-            labels.append({dis_type:label})
-            dis_types.append(dis_type)
-            if args.gpu:
-                im  = im.cuda()
-                label = label.cuda()
-            pred = model(im)
-            preds.append({dis_type:np.asarray(pred)})
-        dis = list(set(dis_types))
-        for i in dis:
-            l_tmp = [j[i] for j in labels if i in j]
-            preds_tmp = [j[i] for j in preds if i in j]
-            SROCC = stats.spearmanr(l_tmp,preds_tmp)[0]
-            RMSE = np.sqrt(((l_tmp - preds_tmp) ** 2).mean())
-            print("Distortion_Type:{} Test Results - RMSE: {:.5f} SROCC: {:.5f}"
-                .format(i,RMSE,SROCC))
+    y_l = np.array([])
+    y_p = np.array([])
 
-
-    
+    time_cost,y_l,y_p = test(test_loader,y_l,y_p)
+    SROCC, KROCC, PLCC, RMSE, Acc = evaluate(y_l,y_p)
+    print("Testing Results - Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f}"
+             .format(Acc, RMSE,SROCC,KROCC,PLCC))
+    print("TIME COST:",time_cost)

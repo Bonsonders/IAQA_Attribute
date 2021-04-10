@@ -25,12 +25,14 @@ class DataSet(Dataset):
         transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])])
         self.dis_type = None
         self.crop_num = args.crop_num
+
         with open(self.label_file,'r') as f:
             im_label = f.readlines()
             for i in im_label:
                 warnings.resetwarnings()
                 im_name = i.split(' ')[0]
                 im_label = i.split(' ')[1]
+                im_attribute = np.array(i.split(' ')[2:-1],dtype=float)
                 if os.path.isfile(os.path.join(self.dir,im_name)):
                     warnings.filterwarnings('error')
                     try:

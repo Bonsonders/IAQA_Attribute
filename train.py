@@ -1,16 +1,52 @@
 import os
 import torch
+import time
 from utils.options import TrainOptions
 import numpy as np
 import torch.nn.functional as F
 from dataset import get_test_dataloader,get_train_dataloader
 from tensorboardX import SummaryWriter
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-from utils.metrics import val_metrics,test_metrics
+from utils.metrics import val_metrics,test_metrics,evaluate
 from models import *
 from scipy import stats
 import adabound
 from utils.regress_loss import RegressionLoss
+
+def train(epoch,l_list,t_list):
+    start_time = time.time()
+    for batch_index,(ims,labels) in enumerate(train_loader):
+        if args.gpu:
+            ims = ims.cuda()
+            labels = labels.cuda()
+
+        optimizer.zero_grad()
+        outs = model(ims)
+        loss = criterion(labels,outs)
+        loss.backward(retain_graph=True)
+        optimizer.step()
+        n_iter = (epoch - 1) * len(train_loader) + batch_index + 1
+        writer.add_scalar("Train/loss", loss.item(),n_iter)
+
+        l_list = np.append(l_list,labels.detach().cpu().numpy())
+        t_list = np.append(t_list,outs.detach().cpu().numpy())
+
+    end_time = time.time()
+    time_cost = end_time - start_time
+    return time_cost,l_list,t_list
+
+
+def test(l_list,t_list):
+    for batch_index,(ims,labels) in enumerate(test_loader):
+        if args.gpu:
+            ims = ims.cuda()
+            labels = labels.cuda()
+        outs = model(ims)
+        l_list = np.append(l_list,labels.cpu().numpy())
+        t_list = np.append(t_list,outs.cpu().numpy())
+
+    return l_list,t_list
+
 
 if __name__ == "__main__":
 
@@ -23,9 +59,6 @@ if __name__ == "__main__":
     #optimizer = torch.optim.Adam(model.parameters(),lr = args.lr, weight_decay = 1e-3)
     #optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4)
     optimizer = adabound.AdaBound(model.parameters(), lr=args.lr, final_lr=0.1) #Adabound: Adaboost+ SGD
-    val_metric = val_metrics()
-    test_metric = test_metrics()
-    test_metric.crop_num(args)
     criterion = RegressionLoss()
     tensorboard_dir = os.path.join(args.runs,args.name)
     writer = SummaryWriter(tensorboard_dir)
@@ -34,17 +67,58 @@ if __name__ == "__main__":
         os.makedirs(checkpoint_path)
     checkpoints = os.path.join(checkpoint_path, '{net}-{epoch}-{type}.pth')
 
-    train_loader,val_loader = get_train_dataloader(args)
-    test_loader = get_test_dataloader(args)
-    trainer = create_supervised_trainer(model, optimizer, criterion, device= device)
     global best_criterion
     best_criterion = -1
-
-    evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
-   # writer.add_graph(model)
     global lr
     lr = args.lr
+    train_loader,val_loader = get_train_dataloader(args)
+    test_loader = get_test_dataloader(args)
 
+
+    for epoch in range(1,args.epochs):
+
+        y_l = np.array([])
+        y_p = np.array([])
+        for param_group in optimizer.param_groups:
+            current_lr = param_group['lr']
+        time_cost, y_l, y_p = train(epoch,y_l,y_p)
+        print("====================Epoch:{}==================== Learning Rate:{:.5f}".format(epoch,current_lr))
+        SROCC, KROCC, PLCC, RMSE, Acc = evaluate(y_l,y_p)
+        writer.add_scalar('Train/SROCC', SROCC,epoch)
+        print("Training Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f} ***** Time Cost: {:.1f} s"
+             .format(epoch, Acc, RMSE,SROCC,KROCC,PLCC,time_cost))
+
+
+        y_l = np.array([])
+        y_p = np.array([])
+        start = time.time()
+        y_l, y_p = test(args,test_loader,y_l,y_p)
+        SROCC, KROCC, PLCC, RMSE, Acc = evaluate(y_l,y_p)
+        end = time.time()
+        writer.add_scalar('Test/LOSS', RMSE,epoch)
+        writer.add_scalar('Test/SROCC', SROCC,epoch)
+        print("Testing Results - Epoch: {}  Avg accuracy: {:.3f} RMSE: {:.5f}  SROCC: {:.5f} KROCC: {:.5f} PLCC: {:.5f} ***** Time Cost: {:.1f} s"
+             .format(epoch, Acc, RMSE,SROCC,KROCC,PLCC,end-start))
+
+#------------------------------------------------------------------------#
+
+            ####################################################
+            #                                                  #
+            #          This is Generate by Ignite              #
+            #        A Tools for training and testing          #
+            #           For more please refer to:              #
+            #                                                  #
+            #            https://pytorch.org/ignite/           #
+            #                                                  #
+            ####################################################
+
+#------------------------------------------------------------------------#
+'''
+    trainer = create_supervised_trainer(model, optimizer, criterion, device= device)
+    val_metric = val_metrics()
+    test_metric = test_metrics()
+    test_metric.crop_num(args)
+    evaluator = create_supervised_evaluator(model,metrics = {'val': val_metric},device = device)
 
     @trainer.on(Events.ITERATION_COMPLETED(every = args.log_interval))
     def training_loss(trainer):
@@ -72,11 +146,6 @@ if __name__ == "__main__":
             .format(trainer.state.epoch, Acc, RMSE,SROCC,KROCC,PLCC))
         writer.add_scalar('Val/LOSS', RMSE, trainer.state.epoch)
         writer.add_scalar('Val/SROCC', SROCC, trainer.state.epoch)
-       # global best_criterion
-       # if SROCC > best_criterion:
-           #torch.save(model.state_dict(), checkpoints.format(net=args.name, epoch=trainer.state.epoch, type='val'))
-           # best_criterion = SROCC
-           # writer.add_text('Best_Criertion',"Epoch:{} {:.5f}".format(trainer.state.epoch,best_criterion))
 
         if args.distortion_divided:
             labels = list()
@@ -120,29 +189,7 @@ if __name__ == "__main__":
             best_criterion = abs(SROCC)
             writer.add_text('Best_Criertion',"Epoch:{} {:.5f}".format(trainer.state.epoch,best_criterion))
 
-        if args.distortion_divided:
-            labels = list()
-            preds = list()
-            dis_types = list()
-            for (im, label, dis_type) in test_loader:
-                labels.append({dis_type:label})
-                dis_types.append(dis_type)
-                if args.gpu:
-                    im= im.cuda()
-                    label = label.cuda()
-                pred = model(im)
-                preds.append({dis_type:np.asarray(pred)})
-            dis = list(set(dis_types))
-            for i in dis:
-                l_tmp = [j[i] for j in labels if i in j]
-                preds_tmp = [j[i] for j in preds if i in j]
-                SROCC = stats.spearmanr(l_tmp,preds_tmp)[0]
-                RMSE = np.sqrt(((l_tmp - preds_tmp) ** 2).mean())
-                writer.add_scalar('{}/LOSS'.format(i),RMSE,trainer.state.epoch)
-                writer.add_scalar('{}/SROCC'.format(i),SROCC,trainer.state.epoch)
-                print("Distortion_Type:{} Test Results - RMSE: {:.5f} SROCC: {:.5f}"
-                    .format(i, RMSE, SROCC))
-
-
 
     trainer.run(train_loader, max_epochs= args.epochs)
+'''
+#------------------------------------------------------------------------#

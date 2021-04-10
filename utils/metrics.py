@@ -52,3 +52,16 @@ class test_metrics(Metric):
         ACC = (y == pred).mean()
 
         return SROCC,KROCC,PLCC,RMSE,ACC
+
+
+def evaluate(labels,targets):
+    y = np.reshape(np.asarray(labels),(-1,))
+    pred = np.reshape(np.asarray(targets),(-1,))
+    #Calulate the Metric of our mission
+    SROCC = stats.spearmanr(y,pred)[0]
+    KROCC = stats.stats.kendalltau(y,pred)[0]
+    PLCC = stats.pearsonr(y,pred)[0]
+    RMSE = np.sqrt(((y - pred) ** 2).mean())
+    ACC = (y == pred).mean()
+
+    return SROCC,KROCC,PLCC,RMSE,ACC
