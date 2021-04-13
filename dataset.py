@@ -16,6 +16,7 @@ class DataSet(Dataset):
         self.label_file = args.label_dir
         self.im_names = list()
         self.label = list()
+        Flag = None
         self.trans = transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize((256, 256)),
@@ -46,8 +47,11 @@ class DataSet(Dataset):
                         for i in range(args.crop_num):
                             self.im_names.append(im_name)
                             self.label.append(float(im_label))
-                if args.distortion_divided:
-                    self.dis_type = [i.split('/')[0] for i in self.im_names]
+                            if Flag == None:
+                                self.attribute = im_attribute
+                                Flag = 0
+                            else:
+                                self.attribute = np.vstack((self.attribute,im_attribute))
         #self.label_std= (self.label-np.min(self.label))/(np.max(self.label)-np.min(self.label))
         self.len = len(self.label)
 
@@ -61,25 +65,32 @@ class DataSet(Dataset):
         if im.size(0)== 1:
            im = im.repeat(3,1,1)
         im = self.trans(im)
-        if self.dis_type == None:
-            return im,torch.tensor([self.label[idx]])
-        else:
-            return im,label_ls,torch.tensor([self.dis_type[idx]])
+        lab_att = np.append(np.array(self.label[idx]),self.attribute[idx])
+
+        return im,torch.tensor(lab_att)
 
 
 def get_train_dataloader(args):
     dataset_training = DataSet(args)
     lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)+1]
+    if (sum(lengths) == len(dataset_training)):
+        pass
+    else:
+        lengths = [int(len(dataset_training)*0.8),int(len(dataset_training)*0.2)]
     data_train,data_val = torch.utils.data.random_split(dataset_training,lengths)
-    train_loader = DataLoader(data_train,
+    train_loader = DataLoader(dataset_training,
                               batch_size = args.batch_size,
+                              pin_memory=True,
                               shuffle = True,
-                              num_workers=4)
+                              drop_last=True,
+                              num_workers=10)
 
     val_loader = DataLoader(data_val,
+                              pin_memory=True,
                               batch_size = args.batch_size,
                               shuffle = True,
-                              num_workers=4)
+                              drop_last=True,
+                              num_workers=10)
 
     return train_loader,val_loader
 
@@ -133,17 +144,16 @@ class TestDataSet(Dataset):
         if im.size(0)== 1:
            im = im.repeat(3,1,1)
         im = self.trans(im)
-        if self.dis_type == None:
-            return im,torch.tensor([self.label[idx]])
-        else:
-            return im,label_ls,torch.tensor([self.dis_type[idx]])
 
+        return im,torch.tensor([self.label[idx]])
 
 def get_test_dataloader(args):
     dataset_testing = TestDataSet(args)
     test_loader = DataLoader(dataset_testing,
+                             pin_memory=True,
                              batch_size = args.batch_size,
                              shuffle = False,
-                             num_workers=4)
+                             drop_last=True,
+                             num_workers=10)
     return test_loader
 

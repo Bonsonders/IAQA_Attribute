@@ -13,22 +13,33 @@ from scipy import stats
 import adabound
 from utils.regress_loss import RegressionLoss
 
+def inplace_relu(m):
+    classname = m.__class__.__name__
+    if classname.find('ReLU') != -1:
+        m.inplace=True
+
 def train(epoch,l_list,t_list):
     start_time = time.time()
     for batch_index,(ims,labels) in enumerate(train_loader):
         if args.gpu:
-            ims = ims.cuda()
-            labels = labels.cuda()
+            ims = ims.cuda(non_blocking=True)
+            labels = labels.cuda(non_blocking=True)
 
         optimizer.zero_grad()
-        outs = model(ims)
-        loss = criterion(labels,outs)
+        if args.attribute:
+            outs,att = model(ims)
+            loss2 = torch.nn.functional.l1_loss(att,labels[:,1:])
+            loss2.backward(retain_graph=True)
+        else:
+            outs = model(ims)
+        loss = criterion(outs.float(),labels[:,0:1].float())
         loss.backward(retain_graph=True)
+
         optimizer.step()
         n_iter = (epoch - 1) * len(train_loader) + batch_index + 1
         writer.add_scalar("Train/loss", loss.item(),n_iter)
 
-        l_list = np.append(l_list,labels.detach().cpu().numpy())
+        l_list = np.append(l_list,labels[:,0:1].detach().cpu().numpy())
         t_list = np.append(t_list,outs.detach().cpu().numpy())
 
     end_time = time.time()
@@ -39,10 +50,13 @@ def train(epoch,l_list,t_list):
 def test(l_list,t_list):
     for batch_index,(ims,labels) in enumerate(test_loader):
         if args.gpu:
-            ims = ims.cuda()
-            labels = labels.cuda()
-        outs = model(ims)
-        l_list = np.append(l_list,labels.detach().cpu().numpy())
+            ims = ims.cuda(non_blocking=True)
+            labels = labels.cuda(non_blocking=True)
+        if args.attribute:
+            outs,att = model(ims)
+        else:
+            outs = model(ims)
+        l_list = np.append(l_list,labels[:,0:1].detach().cpu().numpy())
         t_list = np.append(t_list,outs.detach().cpu().numpy())
 
     return l_list,t_list
@@ -56,6 +70,7 @@ if __name__ == "__main__":
     model = IAQA_model(args)
     device = torch.device("cuda" if args.gpu and torch.cuda.is_available() else "cpu")
     model = model.to(device)
+    model.apply(inplace_relu)
     #optimizer = torch.optim.Adam(model.parameters(),lr = args.lr, weight_decay = 1e-3)
     #optimizer = torch.optim.SGD(model.parameters(),lr = args.lr,momentum = 0.9,weight_decay=5e-4)
     optimizer = adabound.AdaBound(model.parameters(), lr=args.lr, final_lr=0.1) #Adabound: Adaboost+ SGD
@@ -73,7 +88,7 @@ if __name__ == "__main__":
     test_loader = get_test_dataloader(args)
 
 
-    for epoch in range(1,args.epochs):
+    for epoch in range(1,args.epochs+1):
 
         y_l = np.array([])
         y_p = np.array([])

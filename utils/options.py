@@ -15,6 +15,7 @@ class TrainOptions():
         parser.add_argument('--epochs',type= int,default=200,help='number of ephoes to train (default:200)')
         parser.add_argument('--gpu',type= bool,default=True,help='flag whether to use GPU acceleration')
         parser.add_argument('--batch_size',type= int,default=32,help='input batchsize for training(default:32)')
+        parser.add_argument('--attribute',type= bool,default=False,help='flag whether to use attribue or not')
         parser.add_argument('--log_interval',type= int,default=10,help='number of interval to report the status')
         parser.add_argument('--label_dir',type= str,default='',help='directory for label.txt/label.csv')
         parser.add_argument('--data_dir',type= str,default='',help='directory for Dataset')
