@@ -26,12 +26,13 @@ def train(epoch,l_list,t_list):
             labels = labels.cuda(non_blocking=True)
 
         optimizer.zero_grad()
+        size_ratio = labels[:,-1]
         if args.attribute:
-            outs,att = model(ims)
-            loss2 = torch.nn.functional.l1_loss(att,labels[:,1:])
+            outs,att = model(ims,size_ratio)
+            loss2 = torch.nn.functional.l1_loss(att,labels[:,1:-1])
             loss2.backward(retain_graph=True)
         else:
-            outs = model(ims)
+            outs = model(ims,size_ratio)
         loss = criterion(outs.float(),labels[:,0:1].float())
         loss.backward(retain_graph=True)
 
@@ -52,10 +53,11 @@ def test(l_list,t_list):
         if args.gpu:
             ims = ims.cuda(non_blocking=True)
             labels = labels.cuda(non_blocking=True)
+        size_ratio = labels[:,-1]
         if args.attribute:
-            outs,att = model(ims)
+            outs,att = model(ims,size_ratio)
         else:
-            outs = model(ims)
+            outs = model(ims,size_ratio)
         l_list = np.append(l_list,labels[:,0:1].detach().cpu().numpy())
         t_list = np.append(t_list,outs.detach().cpu().numpy())
 

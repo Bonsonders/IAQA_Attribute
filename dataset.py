@@ -16,6 +16,7 @@ class DataSet(Dataset):
         self.label_file = args.label_dir
         self.im_names = list()
         self.label = list()
+        self.size_rate = list()
         Flag = None
         self.trans = transforms.Compose([
         transforms.ToPILImage(),
@@ -45,6 +46,8 @@ class DataSet(Dataset):
                     warnings.resetwarnings()
                     if w>224 and h>224:
                         for i in range(args.crop_num):
+                            hw = np.around(h/w,4)
+                            self.size_rate.append(hw)
                             self.im_names.append(im_name)
                             self.label.append(float(im_label))
                             if Flag == None:
@@ -66,6 +69,7 @@ class DataSet(Dataset):
            im = im.repeat(3,1,1)
         im = self.trans(im)
         lab_att = np.append(np.array(self.label[idx]),self.attribute[idx])
+        lab_att = np.append(lab_att,self.size_rate[idx])
 
         return im,torch.tensor(lab_att)
 
@@ -101,6 +105,7 @@ class TestDataSet(Dataset):
         self.label_file = args.testlabel_dir
         self.im_names = list()
         self.label = list()
+        self.size_rate = list()
         self.trans = transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize((256, 256)),
@@ -127,6 +132,7 @@ class TestDataSet(Dataset):
                     warnings.resetwarnings()
                     if w>224 and h>224:
                         for i in range(args.crop_num):
+                            self.size_rate.append(np.around(h/w,4))
                             self.im_names.append(im_name)
                             self.label.append(float(im_label))
                 if args.distortion_divided:
@@ -144,8 +150,8 @@ class TestDataSet(Dataset):
         if im.size(0)== 1:
            im = im.repeat(3,1,1)
         im = self.trans(im)
-
-        return im,torch.tensor([self.label[idx]])
+        lab_r = np.append(np.array(self.label[idx]),self.size_rate[idx])
+        return im,torch.tensor(lab_r)
 
 def get_test_dataloader(args):
     dataset_testing = TestDataSet(args)
