@@ -46,23 +46,26 @@ class IAQA_model(nn.Module):
     def __init__ (self,args):
         super(IAQA_model,self).__init__()
         self.args = args
-        MobileNet = model_template.mobilenet_v3_small(pretrained=True)
+        MobileNet = model_template.mobilenet_v3_large(pretrained=True)
         self.features1 = MobileNet.features.apply(insert_inplate_1_2)
         self.features2 = MobileNet.features
         self.features3 = MobileNet.features.apply(insert_inplate_2_1)
         self.classifer1 = nn.Sequential(
             nn.Linear(576*3, args.layer_num),
             nn.LeakyReLU(True),
-            nn.Dropout(0.5),
-            nn.Linear(args.layer_num,1)
-            )
+            nn.Dropout(0.5))
+           # nn.Linear(args.layer_num,1))
         self.classifer2 = nn.Sequential(
-                    nn.Linear(960,args.layer_num),
+                    nn.Linear(576*3,args.layer_num),
                     nn.LeakyReLU(True),
                     nn.Dropout(0.5),
-                    nn.Linear(args.layer_num,3)
-        )
-
+                    nn.Linear(args.layer_num,3))
+        self.classifer_att = nn.Sequential(
+                    nn.Linear(576*3,args.layer_num),
+                    nn.LeakyReLU(True),
+                    nn.Dropout(0.5))
+        self.linear = nn.Linear(args.layer_num,3)
+        self.linear2 = nn.Linear(args.layer_num*2,1)
     def forward(self,x,r):
         x= x.float()
         out1= self.features1(x)
@@ -79,6 +82,15 @@ class IAQA_model(nn.Module):
         out2 = ratio[:,1].unsqueeze(1).cuda()*out2
         out3 = ratio[:,2].unsqueeze(1).cuda()*out3
         out= torch.cat((out1,out2,out3),1)
-        out= self.classifer1(out)
-        return out
+
+        if self.args.attribute:
+            out2_1= self.classifer_att(out)
+            out2= self.linear(out2_1)
+            out1_1= self.classifer1(out)
+            out1= torch.cat((out2_1,out1_1),1)
+            out1= self.linear2(out1)
+            return out1,out2
+        else:
+            out1= self.classifer1(out)
+            return out1
 
